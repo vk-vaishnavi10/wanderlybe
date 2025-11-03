@@ -8,9 +8,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class OpenAiConfig {
-
-    @Value("${wanderly.api.key}")
+    @Value("${wanderly.api.key:dummy}")
     private String wanderlyApiKey;
+    
 
     @Bean(name = "wanderlyClient")
     public WebClient wanderlyClient() {
