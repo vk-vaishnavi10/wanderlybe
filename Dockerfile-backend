@@ -1,14 +1,15 @@
-# Use a lightweight OpenJDK 17 base image
-FROM openjdk:17-jdk-slim
-
-# Set working directory inside container
+# 🧱 Stage 1 — Build the JAR using Maven inside Docker
+FROM maven:3.9.5-eclipse-temurin-17 AS build
 WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Copy the built JAR file into the container
-COPY target/*.jar app.jar
+# 🚀 Stage 2 — Run the Spring Boot app
+# ✅ Compatible with ARM64 Macs
+FROM openjdk:21-jdk-slim
 
-# Expose backend port
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8085
-
-# Run the Spring Boot app with docker profile
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=docker"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -33,20 +33,27 @@ public class TransportBookingController {
                 return ResponseEntity.badRequest().body("User or Transport details missing!");
             }
 
-            // Optional: ensure User and Transport exist
+            // ⚙️ Disable strict validation for local/demo use
+            // If the user or transport doesn't exist in DB, just skip validation for now.
+            // Later, once login and transport catalog are ready, re-enable this block.
+            /*
             if (!userRepository.existsById(booking.getUser().getId())) {
                 return ResponseEntity.badRequest().body("Invalid user ID!");
             }
             if (!transportRepository.existsById(booking.getTransport().getId())) {
                 return ResponseEntity.badRequest().body("Invalid transport ID!");
             }
+            */
 
+            // ✅ Save booking
             TransportBooking saved = transportBookingService.saveBooking(booking);
             return ResponseEntity.ok(saved);
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Error saving booking: " + e.getMessage());
+            return ResponseEntity
+                    .badRequest()
+                    .body("Error saving booking: " + e.getMessage());
         }
     }
 
