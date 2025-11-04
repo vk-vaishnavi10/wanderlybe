@@ -1,15 +1,29 @@
-# 🧱 Stage 1 — Build the JAR using Maven inside Docker
+# ===============================
+# 🧱 Stage 1 — Build the Spring Boot JAR using Maven
+# ===============================
 FROM maven:3.9.5-eclipse-temurin-17 AS build
 WORKDIR /app
+
+# 1️⃣ Copy only pom.xml first to leverage Docker caching
 COPY pom.xml .
+
+# 2️⃣ Pre-download dependencies (avoids rebuilding every time)
+RUN mvn dependency:go-offline -B
+
+# 3️⃣ Copy source and build
 COPY src ./src
 RUN mvn clean package -DskipTests
 
+# ===============================
 # 🚀 Stage 2 — Run the Spring Boot app
-# ✅ Compatible with ARM64 Macs
-FROM openjdk:21-jdk-slim
-
+# ===============================
+FROM eclipse-temurin:21-jdk
 WORKDIR /app
+
+# ✅ Copy the built JAR from previous stage
 COPY --from=build /app/target/*.jar app.jar
+
+# ✅ Use port 8085 (as in your docker-compose.yml)
 EXPOSE 8085
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
