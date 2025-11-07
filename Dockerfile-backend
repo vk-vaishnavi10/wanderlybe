@@ -1,18 +1,24 @@
 # ===============================
-# 🧱 Stage 1 — Build the Spring Boot JAR using Maven
+# 🧱 Stage 1 — Clone + Build the Spring Boot JAR
 # ===============================
-FROM maven:3.9.5-eclipse-temurin-17 AS build
+FROM maven:3.9.5-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# 1️⃣ Copy only pom.xml first to leverage Docker caching
-COPY pom.xml .
+# ✅ Install git
+RUN apt-get update && apt-get install -y git
 
-# 2️⃣ Pre-download dependencies (avoids rebuilding every time)
+# ✅ Clone your backend repo
+RUN git clone --branch main https://github.com/vk-vaishnavi10/wanderlybe.git .
+
+# ✅ Force Maven to use Java 21
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+ENV PATH="$JAVA_HOME/bin:$PATH"
+
+# ✅ Download all dependencies (to speed up caching)
 RUN mvn dependency:go-offline -B
 
-# 3️⃣ Copy source and build
-COPY src ./src
-RUN mvn clean package -DskipTests
+# ✅ Build the Spring Boot JAR (skip tests & enforce release 21)
+RUN mvn clean package -DskipTests -Dmaven.compiler.release=21
 
 # ===============================
 # 🚀 Stage 2 — Run the Spring Boot app
@@ -20,10 +26,17 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:21-jdk
 WORKDIR /app
 
-# ✅ Copy the built JAR from previous stage
+# ✅ Copy built JAR from previous stage
 COPY --from=build /app/target/*.jar app.jar
 
-# ✅ Use port 8085 (as in your docker-compose.yml)
+# ✅ Create upload directory (for image uploads, profiles, etc.)
+RUN mkdir -p /app/uploads/profile
+
+# ✅ Mount uploads as volume (to persist data)
+VOLUME ["/app/uploads"]
+
+# ✅ Expose backend port
 EXPOSE 8085
 
+# ✅ Run Spring Boot JAR
 ENTRYPOINT ["java", "-jar", "app.jar"]
