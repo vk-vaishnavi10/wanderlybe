@@ -7,18 +7,21 @@ WORKDIR /app
 # ✅ Install git
 RUN apt-get update && apt-get install -y git
 
+# ✅ Use the correct Java home from Temurin Maven image
+ENV JAVA_HOME=/opt/java/openjdk
+ENV PATH="$JAVA_HOME/bin:$PATH"
+
 # ✅ Clone your backend repo
 RUN git clone --branch main https://github.com/vk-vaishnavi10/wanderlybe.git .
 
-# ✅ Force Maven to use Java 21
-ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
-ENV PATH="$JAVA_HOME/bin:$PATH"
+# ✅ Verify Java and Maven versions (optional sanity check)
+RUN java -version && mvn -v
 
-# ✅ Download all dependencies (to speed up caching)
+# ✅ Download all dependencies (for caching)
 RUN mvn dependency:go-offline -B
 
-# ✅ Build the Spring Boot JAR (skip tests & enforce release 21)
-RUN mvn clean package -DskipTests -Dmaven.compiler.release=21
+# ✅ Build the Spring Boot JAR (skip tests)
+RUN mvn clean package -DskipTests
 
 # ===============================
 # 🚀 Stage 2 — Run the Spring Boot app
@@ -29,7 +32,7 @@ WORKDIR /app
 # ✅ Copy built JAR from previous stage
 COPY --from=build /app/target/*.jar app.jar
 
-# ✅ Create upload directory (for image uploads, profiles, etc.)
+# ✅ Create upload directory (for image uploads, etc.)
 RUN mkdir -p /app/uploads/profile
 
 # ✅ Mount uploads as volume (to persist data)
