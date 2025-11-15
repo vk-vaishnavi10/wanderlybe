@@ -29,59 +29,38 @@ public class TransportBookingController {
     @PostMapping
     public ResponseEntity<?> createBooking(@RequestBody TransportBooking booking) {
         try {
-            if (booking.getUser() == null || booking.getTransport() == null) {
-                return ResponseEntity.badRequest().body("User or Transport details missing!");
+            if (booking.getUser() == null || booking.getUser().getId() == null) {
+                return ResponseEntity.badRequest().body("❌ Missing user ID in booking payload!");
             }
-
-            // ⚙️ Disable strict validation for local/demo use
-            // If the user or transport doesn't exist in DB, just skip validation for now.
-            // Later, once login and transport catalog are ready, re-enable this block.
-            /*
-            if (!userRepository.existsById(booking.getUser().getId())) {
-                return ResponseEntity.badRequest().body("Invalid user ID!");
+            if (booking.getTransport() == null || booking.getTransport().getId() == null) {
+                return ResponseEntity.badRequest().body("❌ Missing transport ID in booking payload!");
             }
-            if (!transportRepository.existsById(booking.getTransport().getId())) {
-                return ResponseEntity.badRequest().body("Invalid transport ID!");
+    
+            // 🧩 Resolve proper User & Transport from DB so Hibernate can manage them
+            var userOpt = userRepository.findById(booking.getUser().getId());
+            if (!userOpt.isPresent()) {
+                return ResponseEntity.badRequest().body("⚠️ Invalid user ID!");
             }
-            */
-
+            var transportOpt = transportRepository.findById(booking.getTransport().getId());
+            if (!transportOpt.isPresent()) {
+                return ResponseEntity.badRequest().body("⚠️ Invalid transport ID!");
+            }
+    
+            booking.setUser(userOpt.get());
+            booking.setTransport(transportOpt.get());
+    
+            // 🗓️ Basic validation
+            if (booking.getBookingDate() == null) {
+                return ResponseEntity.badRequest().body("⚠️ bookingDate is required (use ISO format: yyyy-MM-dd'T'HH:mm:ss)");
+            }
+    
             // ✅ Save booking
             TransportBooking saved = transportBookingService.saveBooking(booking);
             return ResponseEntity.ok(saved);
-
+    
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity
-                    .badRequest()
-                    .body("Error saving booking: " + e.getMessage());
+            return ResponseEntity.status(500).body("💥 Error saving booking: " + e.getMessage());
         }
     }
-
-    // ✅ 2. Get all bookings
-    @GetMapping
-    public List<TransportBooking> getAllBookings() {
-        return transportBookingService.getAllBookings();
-    }
-
-    // ✅ 3. Get booking by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getBookingById(@PathVariable Long id) {
-        Optional<TransportBooking> booking = transportBookingService.getBookingById(id);
-        return booking.isPresent()
-                ? ResponseEntity.ok(booking.get())
-                : ResponseEntity.notFound().build();
-    }
-
-    // ✅ 4. Get all bookings by user
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<?> getBookingsByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(transportBookingService.getBookingsByUser(userId));
-    }
-
-    // ✅ 5. Delete booking
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteBooking(@PathVariable Long id) {
-        transportBookingService.deleteBooking(id);
-        return ResponseEntity.ok("Booking deleted successfully!");
-    }
-}
+}    

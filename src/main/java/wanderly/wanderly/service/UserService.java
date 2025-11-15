@@ -15,19 +15,17 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
+    public List<User> getAllUsers() { return userRepository.findAll(); }
 
-    public Optional<User> getUserById(Long id) {
-        return userRepository.findById(id);
-    }
+    public Optional<User> getUserById(Long id) { return userRepository.findById(id); }
 
-    public User saveUser(User user) {
-        return userRepository.save(user);
-    }
+    public Optional<User> getUserByEmail(String email) { return userRepository.findByEmail(email); }
 
-    public void deleteUser(Long id) {
-        userRepository.deleteById(id);
-    }
+    public Optional<User> getUserByPhone(String phone) { return userRepository.findByPhone(phone); }
+
+    public Optional<User> getUserByWanderId(String wanderId) { return userRepository.findByWanderId(wanderId); }
+
+    public User saveUser(User user) { return userRepository.save(user); }
+
+    public void deleteUser(Long id) { userRepository.deleteById(id); }
 }

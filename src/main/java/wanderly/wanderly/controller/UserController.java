@@ -21,26 +21,50 @@ public class UserController {
     // ✅ Register User
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
-        Optional<User> existing = userRepository.findByEmail(user.getEmail());
-        if (existing.isPresent()) {
-            return ResponseEntity.badRequest().body("User already exists with this email");
-        }
+        // check duplicates
+        if (userRepository.findByEmail(user.getEmail()).isPresent())
+            return ResponseEntity.badRequest().body(Map.of("error", "Email already exists"));
+
+        if (userRepository.findByPhone(user.getPhone()).isPresent())
+            return ResponseEntity.badRequest().body(Map.of("error", "Phone number already exists"));
+
+        // generate Wander ID
+        String wanderId = "WAND-" + (100000 + new Random().nextInt(900000));
+        user.setWanderId(wanderId);
+
         userRepository.save(user);
-        return ResponseEntity.ok("User registered successfully!");
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "User registered successfully!");
+        response.put("wanderId", wanderId);
+        response.put("user", user);
+        return ResponseEntity.ok(response);
     }
 
-    // ✅ Login User
+    // ✅ Login User (via Wander ID / Email / Phone)
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody Map<String, String> credentials) {
-        String email = credentials.get("email");
+        String identifier = credentials.get("wanderId");
         String password = credentials.get("password");
 
-        Optional<User> user = userRepository.findByEmail(email);
-        if (user.isPresent() && user.get().getPassword().equals(password)) {
-            return ResponseEntity.ok(user.get());
-        } else {
-            return ResponseEntity.status(401).body("Invalid credentials");
+        if (identifier == null || password == null)
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing credentials"));
+
+        Optional<User> userOpt = userRepository.findByEmail(identifier);
+        if (userOpt.isEmpty()) userOpt = userRepository.findByPhone(identifier);
+        if (userOpt.isEmpty()) userOpt = userRepository.findByWanderId(identifier);
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            if (user.getPassword().equals(password)) {
+                return ResponseEntity.ok(Map.of(
+                        "message", "Login successful!",
+                        "user", user
+                ));
+            }
         }
+
+        return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
     }
 
     // ✅ Get all users
@@ -52,28 +76,33 @@ public class UserController {
     // ✅ Get user by ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable Long id) {
-        Optional<User> user = userRepository.findById(id);
-        return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        return userRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    // ✅ Update user
+    // ✅ Update user info
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User updatedUser) {
         return userRepository.findById(id)
                 .map(user -> {
-                    user.setUsername(updatedUser.getUsername());
+                    user.setFullName(updatedUser.getFullName());
                     user.setEmail(updatedUser.getEmail());
                     user.setPassword(updatedUser.getPassword());
+                    user.setPhone(updatedUser.getPhone());
                     userRepository.save(user);
-                    return ResponseEntity.ok("User updated successfully");
+                    return ResponseEntity.ok(Map.of("message", "User updated successfully"));
                 })
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // ✅ Delete user
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        if (!userRepository.existsById(id))
+            return ResponseEntity.notFound().build();
+
         userRepository.deleteById(id);
-        return ResponseEntity.ok("User deleted successfully");
+        return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
     }
 }

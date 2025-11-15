@@ -1,5 +1,6 @@
 package wanderly.wanderly.controller;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import wanderly.wanderly.entity.Transport;
@@ -17,6 +18,17 @@ public class TransportController {
 
     public TransportController(TransportRepository transportRepository) {
         this.transportRepository = transportRepository;
+    }
+
+    // ✅ AUTO-SEED on startup
+    @PostConstruct
+    public void autoSeedOnStartup() {
+        if (transportRepository.count() == 0) {
+            System.out.println("🚗 Transport table empty — seeding default data...");
+            seedTransportData();
+        } else {
+            System.out.println("✅ Transport data already present, skipping seeding.");
+        }
     }
 
     // ✅ Get all transport entries
@@ -40,7 +52,8 @@ public class TransportController {
 
         Transport car1 = new Transport();
         car1.setType("Car");
-        car1.setProvider("Sedan");
+        car1.setName("Sedan");
+        car1.setProvider("Wanderly Rentals");
         car1.setFromCity("Hyderabad");
         car1.setToCity("Delhi");
         car1.setDepartureTime(LocalDateTime.now().plusDays(1));
@@ -48,7 +61,8 @@ public class TransportController {
 
         Transport car2 = new Transport();
         car2.setType("Car");
-        car2.setProvider("SUV");
+        car2.setName("SUV");
+        car2.setProvider("Wanderly Rentals");
         car2.setFromCity("Mumbai");
         car2.setToCity("Pune");
         car2.setDepartureTime(LocalDateTime.now().plusDays(2));
@@ -56,7 +70,8 @@ public class TransportController {
 
         Transport car3 = new Transport();
         car3.setType("Car");
-        car3.setProvider("Luxury");
+        car3.setName("Luxury");
+        car3.setProvider("Wanderly Rentals");
         car3.setFromCity("Chennai");
         car3.setToCity("Bangalore");
         car3.setDepartureTime(LocalDateTime.now().plusDays(3));
@@ -64,7 +79,8 @@ public class TransportController {
 
         Transport cab1 = new Transport();
         cab1.setType("Cab");
-        cab1.setProvider("Airport Cab");
+        cab1.setName("Airport Cab");
+        cab1.setProvider("Wanderly Cabs");
         cab1.setFromCity("Delhi");
         cab1.setToCity("Airport");
         cab1.setDepartureTime(LocalDateTime.now().plusHours(5));
@@ -72,7 +88,8 @@ public class TransportController {
 
         Transport cab2 = new Transport();
         cab2.setType("Cab");
-        cab2.setProvider("Local Ride");
+        cab2.setName("Local Ride");
+        cab2.setProvider("Wanderly Cabs");
         cab2.setFromCity("Hyderabad");
         cab2.setToCity("City Center");
         cab2.setDepartureTime(LocalDateTime.now().plusHours(2));
@@ -80,7 +97,8 @@ public class TransportController {
 
         Transport cab3 = new Transport();
         cab3.setType("Cab");
-        cab3.setProvider("Outstation Cab");
+        cab3.setName("Outstation Cab");
+        cab3.setProvider("Wanderly Cabs");
         cab3.setFromCity("Bangalore");
         cab3.setToCity("Mysore");
         cab3.setDepartureTime(LocalDateTime.now().plusDays(1));
@@ -91,4 +109,3 @@ public class TransportController {
         return ResponseEntity.ok("✅ Transport data seeded successfully!");
     }
 }
-
